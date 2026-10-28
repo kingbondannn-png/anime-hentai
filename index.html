@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime ID - Nonton Sub Indo</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --card-bg: #16213e;
+            --text-color: #e94560;
+            --white: #ffffff;
+            --accent: #0f3460;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--white);
+            margin: 0;
+            padding: 20px;
+        }
+        h1 { text-align: center; color: var(--text-color); }
+
+        /* Search Bar */
+        .search-box {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 70%;
+            border-radius: 5px;
+            border: none;
+            outline: none;
+        }
+        button#searchBtn {
+            padding: 10px 20px;
+            background: var(--text-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Grid Anime */
+        .anime-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        .anime-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .anime-card:hover { transform: scale(1.05); }
+        .anime-card img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+        }
+        .anime-info {
+            padding: 10px;
+            font-size: 14px;
+        }
+        .badge {
+            background: red;
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 10px;
+            float: right;
+        }
+
+        /* Player Section */
+        #player-container {
+            display: none;
+            background: black;
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        iframe {
+            width: 100%;
+            height: 300px;
+            border: none;
+            border-radius: 5px;
+        }
+        .close-btn {
+            background: #ff0000;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .loading { text-align: center; display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>🔞 Anime Hentai ID</h1>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Cari anime...">
+        <button id="searchBtn">Cari</button>
+    </div>
+
+    <div class="loading" id="loader">Memuat...</div>
+    <div class="anime-grid" id="animeList"></div>
+
+    <!-- Area Pemutar Video -->
+    <div id="player-container">
+        <button class="close-btn" onclick="closePlayer()">Tutup Player</button>
+        <iframe id="videoFrame" src="" allowfullscreen></iframe>
+    </div>
+
+    <script>
+        // Menggunakan Katsu API untuk data anime terlengkap
+        const API_URL = "https://katsu.seku.xyz/api/search?q=";
+        const ANIME_LIST = document.getElementById('animeList');
+        const LOADER = document.getElementById('loader');
+
+        // Fungsi Mencari Anime
+        document.getElementById('searchBtn').addEventListener('click', searchAnime);
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') searchAnime();
+        });
+
+        async function searchAnime() {
+            const query = document.getElementById('searchInput').value;
+            if(!query) return;
+
+            LOADER.style.display = 'block';
+            ANIME_LIST.innerHTML = '';
+
+            try {
+                const response = await fetch(API_URL + query);
+                const data = await response.json();
+
+                LOADER.style.display = 'none';
+
+                if(data.results.length === 0) {
+                    ANIME_LIST.innerHTML = '<p style="text-align:center">Tidak ditemukan.</p>';
+                    return;
+                }
+
+                data.results.forEach(anime => {
+                    const card = document.createElement('div');
+                    card.className = 'anime-card';
+                    // Cek apakah ada label 18+
+                    const isAdult = anime.episodes.some(ep => ep.quality === 'HD' || ep.series); 
+
+                    card.innerHTML = `
+                        <img src="${anime.juicebox?.[0]?.image || anime.image}" alt="${anime.title}">
+                        <div class="anime-info">
+                            <strong>${anime.title}</strong><br>
+                            ${anime.releaseDate ? new Date(anime.releaseDate).toLocaleDateString() : ''}
+                        </div>
+                    `;
+                    card.onclick = () => openPlayer(anime.id);
+                    ANIME_LIST.appendChild(card);
+                });
+
+            } catch (error) {
+                LOADER.style.display = 'none';
+                alert("Gagal memuat data. Coba lagi nanti.");
+            }
+        }
+
+        // Fungsi Membuka Player
+        async function openPlayer(id) {
+            LOADER.style.display = 'block';
+            try {
+                // Ambil detail episode
+                const res = await fetch(`https://katsu.seku.xyz/api/detail/${id}`);
+                const details = await res.json();
+
+                // Cari server terbaik (biasanya server 1 atau 2)
+                const server = details.episodes[0]; 
+
+                // Gunakan iframe embed (menggunakan layanan pihak ketiga yang stabil)
+                // Format URL: https://www.kwik.cx/embed/{episode_id}
+                // Catatan: Link embed bisa berubah tergantung ketersediaan server di API
+
+                const frame = document.getElementById('videoFrame');
+                // Kita gunakan link langsung ke file MP4 jika tersedia, atau embed
+                if(server.url) {
+                     // Untuk demo ini, kita arahkan ke halaman watch jika embed kompleks
+                     window.location.href = `https://katsu.seku.xyz/watch/${id}/${server.number}`;
+                } else {
+                    alert("Link video sedang sibuk, coba refresh.");
+                }
+            } catch (e) {
+                LOADER.style.display = 'none';
+                alert("Gagal membuka player.");
+            }
+        }
+
+        function closePlayer() {
+            document.getElementById('player-container').style.display = 'none';
+            document.getElementById('videoFrame').src = "";
+        }
+    </script>
+</body>
+</html>
